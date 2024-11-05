@@ -1,0 +1,192 @@
+**Explicação detalhada do código**
+
+Este código HTML, CSS e JavaScript cria um efeito visual interativo onde partículas formam o texto "Paracetanal" e reagem ao movimento do mouse, afastando-se quando o cursor se aproxima. 
+
+---
+
+**O que é o Canvas**
+
+O elemento `<canvas>` é uma tag HTML que atua como uma área de desenho em que podemos renderizar gráficos via JavaScript. Ele é como uma tela em branco onde podemos desenhar formas, imagens, textos e criar animações. No contexto deste código, o canvas é usado para desenhar partículas que formam um texto e atualizar suas posições para criar o efeito de repulsão ao mouse.
+
+---
+
+**Explicação linha por linha do SCRIPT**
+
+1. **Selecionando o canvas e o contexto de desenho:**
+
+   ```javascript
+   const canvas = document.getElementById('canvas');
+   const ctx = canvas.getContext('2d');
+   ```
+   - **canvas**: Seleciona o elemento `<canvas>` com o ID 'canvas' do HTML.
+   - **ctx**: Obtém o contexto de desenho 2D do canvas, que nos permite desenhar formas e imagens.
+
+2. **Ajustando o tamanho do canvas:**
+
+   ```javascript
+   canvas.width = window.innerWidth;
+   canvas.height = window.innerHeight;
+   ```
+   - Define a largura e a altura do canvas para ocupar toda a janela do navegador.
+
+3. **Criando um objeto para rastrear o mouse:**
+
+   ```javascript
+   const mouse = { x: null, y: null, radius: 150 };
+   ```
+   - **x** e **y**: Coordenadas atuais do mouse.
+   - **radius**: Raio de influência para o efeito de repulsão das partículas.
+
+4. **Atualizando a posição do mouse:**
+
+   ```javascript
+   canvas.addEventListener('mousemove', (event) => {
+       mouse.x = event.x;
+       mouse.y = event.y;
+   });
+   ```
+   - Adiciona um ouvinte de evento ao canvas que atualiza as coordenadas do mouse sempre que ele se move.
+
+5. **Criando a classe Particle:**
+
+   ```javascript
+   class Particle {
+       constructor(x, y) {
+           this.x = x;
+           this.y = y;
+           this.size = 2;
+           this.baseX = x;
+           this.baseY = y;
+           this.density = Math.random() * 20 + 1;
+       }
+   ```
+   - **x** e **y**: Posição atual da partícula.
+   - **size**: Tamanho da partícula.
+   - **baseX** e **baseY**: Posição original da partícula (para onde ela retorna).
+   - **density**: Densidade usada para calcular a velocidade de repulsão (valor aleatório para variar o movimento das partículas).
+
+6. **Método para desenhar a partícula:**
+
+   ```javascript
+       draw() {
+           ctx.fillStyle = 'white';
+           ctx.beginPath();
+           ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+           ctx.closePath();
+           ctx.fill();
+       }
+   ```
+   - Desenha um círculo branco representando a partícula na posição atual.
+
+7. **Método para atualizar a posição da partícula:**
+
+   ```javascript
+       update() {
+           let dx = mouse.x - this.x;
+           let dy = mouse.y - this.y;
+           let distance = Math.sqrt(dx * dx + dy * dy);
+           let maxDistance = mouse.radius;
+           let forceDirectionX = dx / distance;
+           let forceDirectionY = dy / distance;
+           let force = (maxDistance - distance) / maxDistance;
+           let directionX = forceDirectionX * force * this.density;
+           let directionY = forceDirectionY * force * this.density;
+
+           if (distance < mouse.radius) {
+               this.x -= directionX;
+               this.y -= directionY;
+           } else {
+               // Volta para a posição original
+               if (this.x !== this.baseX) {
+                   let dx = this.x - this.baseX;
+                   this.x -= dx / 10;
+               }
+               if (this.y !== this.baseY) {
+                   let dy = this.y - this.baseY;
+                   this.y -= dy / 10;
+               }
+           }
+       }
+   }
+   ```
+   - **Calcula a distância** entre a partícula e o mouse.
+   - **Calcula a força de repulsão** se a partícula estiver dentro do raio de influência do mouse.
+   - **Atualiza a posição** da partícula com base na força calculada.
+   - **Retorna à posição original** se o mouse não estiver próximo.
+
+8. **Criando um array para armazenar as partículas:**
+
+   ```javascript
+   const particlesArray = [];
+   ```
+   - Armazena todas as partículas criadas.
+
+9. **Função para inicializar as partículas:**
+
+   ```javascript
+   function init() {
+       ctx.fillStyle = 'white';
+       ctx.font = 'bold 80px Arial';
+       ctx.textAlign = 'center';
+       ctx.fillText('Paracetanal', canvas.width / 2, canvas.height / 2);
+       const textCoordinates = ctx.getImageData(0, 0, canvas.width, canvas.height);
+       
+       // Limpa o canvas
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+       // Loop pelos pixels para identificar onde desenhar as partículas
+       for (let y = 0; y < textCoordinates.height; y += 4) {
+           for (let x = 0; x < textCoordinates.width; x += 4) {
+               if (textCoordinates.data[(y * 4 * textCoordinates.width) + (x * 4) + 3] > 128) {
+                   let posX = x;
+                   let posY = y;
+                   particlesArray.push(new Particle(posX, posY));
+               }
+           }
+       }
+   }
+   ```
+   - **Desenha o texto** "Paracetanal" no canvas.
+   - **Obtém os dados de pixel** do texto desenhado.
+   - **Limpa o canvas** após obter os dados (para que apenas as partículas apareçam).
+   - **Cria partículas** na posição de cada pixel onde o texto está presente.
+
+10. **Função para animar as partículas:**
+
+    ```javascript
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particlesArray.forEach(particle => {
+            particle.draw();
+            particle.update();
+        });
+        requestAnimationFrame(animate);
+    }
+    ```
+    - **Limpa o canvas** a cada frame.
+    - **Desenha e atualiza** cada partícula.
+    - **Loop de animação** contínuo usando `requestAnimationFrame`.
+
+11. **Inicializando e iniciando a animação:**
+
+    ```javascript
+    init();
+    animate();
+    ```
+    - **Chama `init()`** para criar as partículas.
+    - **Inicia a animação** chamando `animate()`.
+
+---
+
+**Resumo sobre o Canvas**
+
+- **Elemento `<canvas>`**: É uma área de desenho que nos permite renderizar gráficos dinamicamente via JavaScript.
+- **Contexto de desenho (`ctx`)**: Fornece métodos e propriedades para desenhar e manipular conteúdo dentro do canvas.
+- **Uso neste código**:
+  - **Desenhar o texto** inicialmente para obter as coordenadas dos pixels.
+  - **Criar e desenhar partículas** que formam o texto.
+  - **Atualizar as partículas** para criar o efeito de repulsão ao mouse.
+
+---
+
+Este código demonstra como usar o canvas para criar efeitos visuais interativos, combinando manipulação de pixels, animação e interação com o usuário através do movimento do mouse.
